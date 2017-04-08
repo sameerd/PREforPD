@@ -34,7 +34,9 @@ x <- filter(x, TimePt == 1 || TimePt == 5) %>%
 #  delete "mean50", "dsScaSco" and their associated change scores
      select(-mean50, -dsScaSco, -mean50cs, -dsScaScoCs) %>%
 # rename T_score_CW variable
-     rename(stroop_score = T_score_CW )
+     rename(stroop_score = T_score_CW ) %>%
+# we only want to look at people that are off meds
+     filter(DrugStatusOn == 1)
 
 variables.list <- list(ptpmovement=c("pv", "tpv", "ag1Dur", "qAg1", "ag1overt1", "q30", "qAg", 
                                      "nab", "qAnt", "Concon_Pre_flex_1", "Concon_Post_flex_1"),
@@ -49,22 +51,19 @@ clinical.variables <- c("updrs", "brady", "rigid", "tremor", "axial")
 
 new.change.variables <- c(variables, clinical.variables)
 
-misc.variables <- c("id", "TimePt", "DrugStatusOn", "Group", "completers",
-                    "pairnum")
+misc.variables <- c("id", "TimePt", "Group", "completers", "pairnum")
 
 
 #split the dataframe into 24 months and baseline
 d.24 <- filter(x, TimePt == 5)
 d.0 <- filter(x, TimePt == 1)
 
-# check that the patient id and the DrugStatusOn columns match in the two sets
-c(all.equal(d.24$id, d.0$id), all.equal(d.24$DrugStatusOn, d.0$DrugStatusOn))
+# check that the patient id match in the two sets
+all.equal(d.24$id, d.0$id)
 
 # change scores are the difference between d.24 and d.0 variables
 cs <- d.24[, new.change.variables] - d.0[, new.change.variables]
 cs$id <- d.24$id
-cs$DrugStatusOn <- factor(d.24$DrugStatusOn, levels=c(0,1),
-                          labels=c("DrugStatusOff", "DrugStatusOn"))
 cs$Group <- as.factor(d.24$Group)
 @
 
@@ -75,7 +74,7 @@ cs$Group <- as.factor(d.24$Group)
 <<plots-of-change-scores-pv, cache=TRUE, echo=TRUE, fig.height=6, fig.width=8>>=
 library(ggplot2)
 library(reshape2)
-cs.melt <- melt(cs, id.vars=c(clinical.variables, "DrugStatusOn", "id", "Group"))
+cs.melt <- melt(cs, id.vars=c(clinical.variables, "id", "Group"))
 cs.melt.list <- lapply(variables.list, function(z) filter(cs.melt, variable %in% z))
 # split up the variables so the graphs aren't too busy
 cs.melt.list[["ptp1"]] = filter(cs.melt.list$ptpmovement, variable %in% variables.list$ptp[1:5])
@@ -84,7 +83,7 @@ cs.melt.list[["ptpmovement"]] <- NULL
 
 
 #test out a graph for one variable
-qplot(updrs, pv, data=cs, geom="point", color=DrugStatusOn) + geom_smooth(method="lm")
+qplot(updrs, pv, data=cs, geom="point") + geom_smooth(method="lm")
 
 # run a correlation test on two variables
 GetCorTestValues <- function(d, var1, var2) {
@@ -95,28 +94,24 @@ GetCorTestValues <- function(d, var1, var2) {
 #GetCorTestValues(filter(cs, DrugStatusOn=="DrugStatusOn"), "updrs", "pv")
 
 # split dataframe by drug status and run two correlation tests
-GetTestByDrugStatus <- function(d, var1, var2) {
-  ret.on.0 <- GetCorTestValues(filter(d, DrugStatusOn=="DrugStatusOn", Group==0) , var1, var2)
-  ret.on.1 <- GetCorTestValues(filter(d, DrugStatusOn=="DrugStatusOn", Group==1) , var1, var2)
-  ret.off.0 <- GetCorTestValues(filter(d, DrugStatusOn=="DrugStatusOff", Group==0), var1, var2)
-  ret.off.1 <- GetCorTestValues(filter(d, DrugStatusOn=="DrugStatusOff", Group==1), var1, var2)
-  ret <- rbind.data.frame(ret.on.0, ret.on.1, ret.off.0, ret.off.1)
-  ret$DrugStatusOn <- rep(c("On", "Off"),each=2)
-  ret$DrugStatusOn <- as.factor(ret$DrugStatusOn)
-  ret$Group <- rep(c(0,1), 2)
+GetTestByGroup <- function(d, var1, var2) {
+  ret.0 <- GetCorTestValues(filter(d, Group==0) , var1, var2)
+  ret.1 <- GetCorTestValues(filter(d, Group==1) , var1, var2)
+  ret <- rbind.data.frame(ret.0, ret.1)
+  ret$Group <- c(0,1)
   ret$var1 <- var1
   ret$var2 <- var2
   row.names(ret) <- NULL
   ret
 }
-#GetTestByDrugStatus(cs, "updrs", "pv")
+#GetTestByGroup(cs, "updrs", "pv")
 
 GetTestResultsbyResponseVariable <- function(d, response_var, indep_vars_list) {
   ret <- do.call(rbind.data.frame, 
-    lapply(indep_vars_list, function(z) GetTestByDrugStatus(d, response_var, z)))
+    lapply(indep_vars_list, function(z) GetTestByGroup(d, response_var, z)))
   ret %>% mutate(sig=ifelse(abs(t)>2, "*", ""), cor=round(cor,2), t=round(t,2),
                  p.value=round(p.value,2)) %>% 
-          select(resp=var1, indep=var2, grp=Group, DrugStat=DrugStatusOn, 
+          select(resp=var1, indep=var2, grp=Group, 
                  cor, p.value, df, t, sig) 
 }
 #GetTestResultsbyResponseVariable(cs, "updrs", variables.list$ptp[1:5])
@@ -128,35 +123,35 @@ GetTestResultsbyResponseVariable <- function(d, response_var, indep_vars_list) {
 
 <<plots-of-change-scores-ptp, echo=TRUE, cache=TRUE, fig.height=6, fig.width=8>>=
 qplot(updrs, value, data=cs.melt.list$ptp1, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "updrs", variables.list$ptp[1:5])
 qplot(axial, value, data=cs.melt.list$ptp1, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "axial", variables.list$ptp[1:5])
 qplot(tremor, value, data=cs.melt.list$ptp1, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "tremor", variables.list$ptp[1:5])
 qplot(brady, value, data=cs.melt.list$ptp1, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "brady", variables.list$ptp[1:5])
 qplot(rigid, value, data=cs.melt.list$ptp1, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "rigid", variables.list$ptp[1:5])
 
 qplot(updrs, value, data=cs.melt.list$ptp2, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "updrs", variables.list$ptp[-c(1:5)])
 qplot(axial, value, data=cs.melt.list$ptp2, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "axial", variables.list$ptp[-c(1:5)])
 qplot(tremor, value, data=cs.melt.list$ptp2, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "tremor", variables.list$ptp[-c(1:5)])
 qplot(brady, value, data=cs.melt.list$ptp2, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "brady", variables.list$ptp[-c(1:5)])
 qplot(rigid, value, data=cs.melt.list$ptp2, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "rigid", variables.list$ptp[-c(1:5)])
 @
 
@@ -165,19 +160,19 @@ GetTestResultsbyResponseVariable(cs, "rigid", variables.list$ptp[-c(1:5)])
 \subsection{Strength variables}
 <<plots-of-change-scores-strength, echo=TRUE, cache=TRUE, fig.height=6, fig.width=8 >>=
 qplot(updrs, value, data=cs.melt.list$strength, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "updrs", variables.list$strength)
 qplot(axial, value, data=cs.melt.list$strength, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "axial", variables.list$strength)
 qplot(tremor, value, data=cs.melt.list$strength, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "tremor", variables.list$strength)
 qplot(brady, value, data=cs.melt.list$strength, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "brady", variables.list$strength)
 qplot(rigid, value, data=cs.melt.list$strength, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "rigid", variables.list$strength)
 @
 
@@ -186,19 +181,19 @@ GetTestResultsbyResponseVariable(cs, "rigid", variables.list$strength)
 \subsection{Hold Release variables}
 <<plots-of-change-scores-hold, echo=TRUE, cache=TRUE, fig.height=6, fig.width=8 >>=
 qplot(updrs, value, data=cs.melt.list$hold.release, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "updrs", variables.list$hold.release)
 qplot(axial, value, data=cs.melt.list$hold.release, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "axial", variables.list$hold.release)
 qplot(tremor, value, data=cs.melt.list$hold.release, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "tremor", variables.list$hold.release)
 qplot(brady, value, data=cs.melt.list$hold.release, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "brady", variables.list$hold.release)
 qplot(rigid, value, data=cs.melt.list$hold.release, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "rigid", variables.list$hold.release)
 @
 
@@ -207,19 +202,19 @@ GetTestResultsbyResponseVariable(cs, "rigid", variables.list$hold.release)
 \subsection{Cognition variables}
 <<plots-of-change-scores-cognition, echo=TRUE, cache=TRUE, fig.height=8, fig.width=8.8 >>=
 qplot(updrs, value, data=cs.melt.list$cognition, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "updrs", variables.list$cognition)
 qplot(axial, value, data=cs.melt.list$cognition, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "axial", variables.list$cognition)
 qplot(tremor, value, data=cs.melt.list$cognition, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "tremor", variables.list$cognition)
 qplot(brady, value, data=cs.melt.list$cognition, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "brady", variables.list$cognition)
 qplot(rigid, value, data=cs.melt.list$cognition, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "rigid", variables.list$cognition)
 @
 
@@ -228,19 +223,19 @@ GetTestResultsbyResponseVariable(cs, "rigid", variables.list$cognition)
 \subsection{Physical variables}
 <<plots-of-change-scores-physical, echo=TRUE, cache=TRUE, fig.height=6, fig.width=8 >>=
 qplot(updrs, value, data=cs.melt.list$physical, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "updrs", variables.list$physical)
 qplot(axial, value, data=cs.melt.list$physical, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "axial", variables.list$physical)
 qplot(tremor, value, data=cs.melt.list$physical, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "tremor", variables.list$physical)
 qplot(brady, value, data=cs.melt.list$physical, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "brady", variables.list$physical)
 qplot(rigid, value, data=cs.melt.list$physical, geom="point", color=Group) + 
-      facet_wrap(~variable+DrugStatusOn, scales="free_y") + geom_smooth(method="lm")
+      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "rigid", variables.list$physical)
 @
 
