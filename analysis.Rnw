@@ -101,7 +101,7 @@ GetTestByDrugStatus <- function(d, var1, var2) {
   ret.off.0 <- GetCorTestValues(filter(d, DrugStatusOn=="DrugStatusOff", Group==0), var1, var2)
   ret.off.1 <- GetCorTestValues(filter(d, DrugStatusOn=="DrugStatusOff", Group==1), var1, var2)
   ret <- rbind.data.frame(ret.on.0, ret.on.1, ret.off.0, ret.off.1)
-  ret$DrugStatusOn <- rep(c("Off", "On"),2)
+  ret$DrugStatusOn <- rep(c("On", "Off"),each=2)
   ret$DrugStatusOn <- as.factor(ret$DrugStatusOn)
   ret$Group <- rep(c(0,1), 2)
   ret$var1 <- var1
@@ -114,10 +114,10 @@ GetTestByDrugStatus <- function(d, var1, var2) {
 GetTestResultsbyResponseVariable <- function(d, response_var, indep_vars_list) {
   ret <- do.call(rbind.data.frame, 
     lapply(indep_vars_list, function(z) GetTestByDrugStatus(d, response_var, z)))
-  ret %>% mutate(stars=ifelse(abs(t)>2, "*", ""), cor=round(cor,2), t=round(t,2),
+  ret %>% mutate(sig=ifelse(abs(t)>2, "*", ""), cor=round(cor,2), t=round(t,2),
                  p.value=round(p.value,2)) %>% 
           select(resp=var1, indep=var2, grp=Group, DrugStat=DrugStatusOn, 
-                 cor, p.value, df, t, stars) 
+                 cor, p.value, df, t, sig) 
 }
 #GetTestResultsbyResponseVariable(cs, "updrs", variables.list$ptp[1:5])
 @
@@ -244,7 +244,21 @@ qplot(rigid, value, data=cs.melt.list$physical, geom="point", color=Group) +
 GetTestResultsbyResponseVariable(cs, "rigid", variables.list$physical)
 @
 
+\newpage
 
+\section{Demographic Data}
 
+<<merge.demographic.data, echo=TRUE, cache=TRUE>>=
+dem <- read.csv("data/DemoData.csv")
+dem <- filter(dem, timept == 1)
+cs.dem <- merge(cs, select(dem, id, male, EthHispanic, RaceWhite, 
+                 HandedR, MostAffectedR, age, DiseaseDuration), by='id')
+dem.variables <-list("male", "MostAffectedR", "age", "DiseaseDuration") 
+GetTestResultsbyResponseVariable(cs.dem, "updrs", dem.variables)
+GetTestResultsbyResponseVariable(cs.dem, "axial", dem.variables)
+GetTestResultsbyResponseVariable(cs.dem, "tremor", dem.variables)
+GetTestResultsbyResponseVariable(cs.dem, "brady", dem.variables)
+GetTestResultsbyResponseVariable(cs.dem, "rigid", dem.variables)
+@
 
 \end{document}

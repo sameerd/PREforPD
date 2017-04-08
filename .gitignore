@@ -6,3 +6,4 @@
 *.sty
 
 .DS_Store
+*.swp
