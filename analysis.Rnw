@@ -256,4 +256,18 @@ GetTestResultsbyResponseVariable(cs.dem, "brady", dem.variables)
 GetTestResultsbyResponseVariable(cs.dem, "rigid", dem.variables)
 @
 
+\section{Looking at updrs variables}
+
+<<separation.between.groups>>=
+t.test(updrs ~ Group, data=cs.dem)
+t.test(axial ~ Group, data=cs.dem)
+t.test(tremor ~ Group, data=cs.dem)
+t.test(brady ~ Group, data=cs.dem)
+t.test(rigid ~ Group, data=cs.dem)
+@
+
+\noindent
+There doesn't look like there is any separation between the groups that is
+significant. All the p-values above are bigger than 0.05.
+
 \end{document}
