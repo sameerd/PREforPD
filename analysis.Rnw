@@ -36,7 +36,7 @@ x <- filter(x, TimePt == 1 || TimePt == 5) %>%
 # rename T_score_CW variable
      rename(stroop_score = T_score_CW ) %>%
 # we only want to look at people that are off meds
-     filter(DrugStatusOn == 1)
+     filter(DrugStatusOn == 0)
 
 variables.list <- list(ptpmovement=c("pv", "tpv", "ag1Dur", "qAg1", "ag1overt1", "q30", "qAg", 
                                      "nab", "qAnt", "Concon_Pre_flex_1", "Concon_Post_flex_1"),
@@ -83,7 +83,7 @@ cs.melt.list[["ptpmovement"]] <- NULL
 
 
 #test out a graph for one variable
-qplot(updrs, pv, data=cs, geom="point") + geom_smooth(method="lm")
+qplot(pv, updrs, data=cs, geom="point") + geom_smooth(method="lm")
 
 # run a correlation test on two variables
 GetCorTestValues <- function(d, var1, var2) {
@@ -122,36 +122,36 @@ GetTestResultsbyResponseVariable <- function(d, response_var, indep_vars_list) {
 \subsection{PtP movement variables}
 
 <<plots-of-change-scores-ptp, echo=TRUE, cache=TRUE, fig.height=6, fig.width=8>>=
-qplot(updrs, value, data=cs.melt.list$ptp1, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, updrs, data=cs.melt.list$ptp1, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "updrs", variables.list$ptp[1:5])
-qplot(axial, value, data=cs.melt.list$ptp1, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, axial, data=cs.melt.list$ptp1, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "axial", variables.list$ptp[1:5])
-qplot(tremor, value, data=cs.melt.list$ptp1, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, tremor, data=cs.melt.list$ptp1, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "tremor", variables.list$ptp[1:5])
-qplot(brady, value, data=cs.melt.list$ptp1, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, brady, data=cs.melt.list$ptp1, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "brady", variables.list$ptp[1:5])
-qplot(rigid, value, data=cs.melt.list$ptp1, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, rigid, data=cs.melt.list$ptp1, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "rigid", variables.list$ptp[1:5])
 
-qplot(updrs, value, data=cs.melt.list$ptp2, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, updrs, data=cs.melt.list$ptp2, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "updrs", variables.list$ptp[-c(1:5)])
-qplot(axial, value, data=cs.melt.list$ptp2, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, axial, data=cs.melt.list$ptp2, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "axial", variables.list$ptp[-c(1:5)])
-qplot(tremor, value, data=cs.melt.list$ptp2, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, tremor, data=cs.melt.list$ptp2, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "tremor", variables.list$ptp[-c(1:5)])
-qplot(brady, value, data=cs.melt.list$ptp2, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, brady, data=cs.melt.list$ptp2, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "brady", variables.list$ptp[-c(1:5)])
-qplot(rigid, value, data=cs.melt.list$ptp2, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, rigid, data=cs.melt.list$ptp2, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "rigid", variables.list$ptp[-c(1:5)])
 @
 
@@ -159,20 +159,20 @@ GetTestResultsbyResponseVariable(cs, "rigid", variables.list$ptp[-c(1:5)])
 
 \subsection{Strength variables}
 <<plots-of-change-scores-strength, echo=TRUE, cache=TRUE, fig.height=6, fig.width=8 >>=
-qplot(updrs, value, data=cs.melt.list$strength, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, updrs, data=cs.melt.list$strength, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "updrs", variables.list$strength)
-qplot(axial, value, data=cs.melt.list$strength, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, axial, data=cs.melt.list$strength, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "axial", variables.list$strength)
-qplot(tremor, value, data=cs.melt.list$strength, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, tremor, data=cs.melt.list$strength, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "tremor", variables.list$strength)
-qplot(brady, value, data=cs.melt.list$strength, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, brady, data=cs.melt.list$strength, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "brady", variables.list$strength)
-qplot(rigid, value, data=cs.melt.list$strength, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, rigid, data=cs.melt.list$strength, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "rigid", variables.list$strength)
 @
 
@@ -180,20 +180,20 @@ GetTestResultsbyResponseVariable(cs, "rigid", variables.list$strength)
 
 \subsection{Hold Release variables}
 <<plots-of-change-scores-hold, echo=TRUE, cache=TRUE, fig.height=6, fig.width=8 >>=
-qplot(updrs, value, data=cs.melt.list$hold.release, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, updrs, data=cs.melt.list$hold.release, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "updrs", variables.list$hold.release)
-qplot(axial, value, data=cs.melt.list$hold.release, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, axial, data=cs.melt.list$hold.release, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "axial", variables.list$hold.release)
-qplot(tremor, value, data=cs.melt.list$hold.release, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, tremor, data=cs.melt.list$hold.release, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "tremor", variables.list$hold.release)
-qplot(brady, value, data=cs.melt.list$hold.release, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, brady, data=cs.melt.list$hold.release, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "brady", variables.list$hold.release)
-qplot(rigid, value, data=cs.melt.list$hold.release, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, rigid, data=cs.melt.list$hold.release, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "rigid", variables.list$hold.release)
 @
 
@@ -201,20 +201,20 @@ GetTestResultsbyResponseVariable(cs, "rigid", variables.list$hold.release)
 
 \subsection{Cognition variables}
 <<plots-of-change-scores-cognition, echo=TRUE, cache=TRUE, fig.height=8, fig.width=8.8 >>=
-qplot(updrs, value, data=cs.melt.list$cognition, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, updrs, data=cs.melt.list$cognition, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "updrs", variables.list$cognition)
-qplot(axial, value, data=cs.melt.list$cognition, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, axial, data=cs.melt.list$cognition, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "axial", variables.list$cognition)
-qplot(tremor, value, data=cs.melt.list$cognition, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, tremor, data=cs.melt.list$cognition, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "tremor", variables.list$cognition)
-qplot(brady, value, data=cs.melt.list$cognition, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, brady, data=cs.melt.list$cognition, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "brady", variables.list$cognition)
-qplot(rigid, value, data=cs.melt.list$cognition, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, rigid, data=cs.melt.list$cognition, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "rigid", variables.list$cognition)
 @
 
@@ -222,20 +222,20 @@ GetTestResultsbyResponseVariable(cs, "rigid", variables.list$cognition)
 
 \subsection{Physical variables}
 <<plots-of-change-scores-physical, echo=TRUE, cache=TRUE, fig.height=6, fig.width=8 >>=
-qplot(updrs, value, data=cs.melt.list$physical, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, updrs, data=cs.melt.list$physical, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "updrs", variables.list$physical)
-qplot(axial, value, data=cs.melt.list$physical, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, axial, data=cs.melt.list$physical, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "axial", variables.list$physical)
-qplot(tremor, value, data=cs.melt.list$physical, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, tremor, data=cs.melt.list$physical, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "tremor", variables.list$physical)
-qplot(brady, value, data=cs.melt.list$physical, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, brady, data=cs.melt.list$physical, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "brady", variables.list$physical)
-qplot(rigid, value, data=cs.melt.list$physical, geom="point", color=Group) + 
-      facet_wrap(~variable, scales="free_y") + geom_smooth(method="lm")
+qplot(value, rigid, data=cs.melt.list$physical, geom="point", color=Group) + 
+      facet_wrap(~variable, scales="free_x") + geom_smooth(method="lm")
 GetTestResultsbyResponseVariable(cs, "rigid", variables.list$physical)
 @
 
@@ -267,7 +267,7 @@ t.test(rigid ~ Group, data=cs.dem)
 @
 
 \noindent
-There doesn't look like there is any separation between the groups that is
-significant. All the p-values above are bigger than 0.05.
+It looks like there is significant separation between the groups especially in
+the rigidity section of the updrs.
 
 \end{document}
