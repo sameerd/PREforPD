@@ -53,6 +53,9 @@ new.change.variables <- c(variables, clinical.variables)
 
 misc.variables <- c("id", "TimePt", "Group", "completers", "pairnum")
 
+# variables to log transform in place
+log.trans.variables <- c(variables.list$ptpmovement, variables.list$strength)
+x <- x %>% mutate_each(funs(log), one_of(log.trans.variables)) 
 
 #split the dataframe into 24 months and baseline
 d.24 <- filter(x, TimePt == 5)
@@ -269,5 +272,23 @@ t.test(rigid ~ Group, data=cs.dem)
 \noindent
 It looks like there is significant separation between the groups especially in
 the rigidity section of the updrs.
+
+\section{Comparing rigidity change score to the original rigidty score}
+
+<<rigid.change.score>>=
+rigid_df <- merge(select(d.0, id, rigid_start=rigid), 
+                  select(cs.dem, id, Group, rigid_change=rigid))
+rigid_melt = melt(rigid_df, id.vars=c("id", "Group"))
+
+qplot(rigid_change, rigid_start, data=rigid_df, color=Group) + geom_smooth(method="lm")
+@
+\noindent
+It looks like the patients who started with high rigidity scores improved the most. 
+
+\section{Significance test for change in td50}
+
+<<td50.analysis>>=
+summary(lm(brady ~ td50 + Group + td50:Group, data=cs.dem))
+@
 
 \end{document}
