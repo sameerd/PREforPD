@@ -25,6 +25,8 @@ opts_chunk$set(fig.path="figure/pre-", cache.path="cache/pre-")
 
 <<setup, cache=TRUE, echo=TRUE>>=
 suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(reshape2))
 
 # read in the csv data
 x <- read.csv("data/mergedMamCs.csv")
@@ -67,7 +69,27 @@ all.equal(d.24$id, d.0$id)
 # change scores are the difference between d.24 and d.0 variables
 cs <- d.24[, new.change.variables] - d.0[, new.change.variables]
 cs$id <- d.24$id
-cs$Group <- as.factor(d.24$Group)
+cs$Group <- factor(d.24$Group, levels=c(0,1), labels=c("FC", "PRE"))
+@
+
+<<plots-of-all-change-scores, cache=TRUE, echo=TRUE, fig.height=6, fig.width=8>>=
+# select only scores and group and melt
+cs.scores <- cs %>% select(one_of(clinical.variables), Group) %>% melt(id.vars="Group")
+
+#look at means, stderr
+cs.scores %>% group_by(variable, Group) %>%
+  summarize(
+    mean=round(mean(value, na.rm=TRUE),2), 
+    stdev = round(sd(value, na.rm=TRUE),2),
+    N = n()
+  )
+
+# plot that shows some of the table above
+ggplot(cs.scores, aes(Group, value)) + 
+  geom_point(aes(color=Group), position=position_jitterdodge()) + 
+  facet_grid(. ~ variable)  +
+  geom_boxplot(aes(fill=Group), alpha=0.6, outlier.color="black")
+
 @
 
 \newpage
@@ -75,15 +97,12 @@ cs$Group <- as.factor(d.24$Group)
 \section{Plots of change scores}
 
 <<plots-of-change-scores-pv, cache=TRUE, echo=TRUE, fig.height=6, fig.width=8>>=
-library(ggplot2)
-library(reshape2)
 cs.melt <- melt(cs, id.vars=c(clinical.variables, "id", "Group"))
 cs.melt.list <- lapply(variables.list, function(z) filter(cs.melt, variable %in% z))
 # split up the variables so the graphs aren't too busy
 cs.melt.list[["ptp1"]] = filter(cs.melt.list$ptpmovement, variable %in% variables.list$ptp[1:5])
 cs.melt.list[["ptp2"]] = filter(cs.melt.list$ptpmovement, variable %in% variables.list$ptp[-c(1:5)])
 cs.melt.list[["ptpmovement"]] <- NULL
-
 
 #test out a graph for one variable
 qplot(pv, updrs, data=cs, geom="point") + geom_smooth(method="lm")
@@ -94,12 +113,12 @@ GetCorTestValues <- function(d, var1, var2) {
   ret <- c(ret$estimate, ret$df, p.value=ret$p.value, ret$parameter, ret$statistic)
   rbind(ret)
 }
-#GetCorTestValues(filter(cs, DrugStatusOn=="DrugStatusOn"), "updrs", "pv")
+#GetCorTestValues(cs, "updrs", "pv")
 
 # split dataframe by drug status and run two correlation tests
 GetTestByGroup <- function(d, var1, var2) {
-  ret.0 <- GetCorTestValues(filter(d, Group==0) , var1, var2)
-  ret.1 <- GetCorTestValues(filter(d, Group==1) , var1, var2)
+  ret.0 <- GetCorTestValues(filter(d, Group=="FC") , var1, var2)
+  ret.1 <- GetCorTestValues(filter(d, Group=="PRE") , var1, var2)
   ret <- rbind.data.frame(ret.0, ret.1)
   ret$Group <- c(0,1)
   ret$var1 <- var1
@@ -118,11 +137,25 @@ GetTestResultsbyResponseVariable <- function(d, response_var, indep_vars_list) {
                  cor, p.value, df, t, sig) 
 }
 #GetTestResultsbyResponseVariable(cs, "updrs", variables.list$ptp[1:5])
+
+# run a correlation test on two variables
+GetRegressionCoefValues <- function(d, var1, var2) {
+  ret <- cor.test(d[[var1]], d[[var2]])
+  ret <- c(ret$estimate, ret$df, p.value=ret$p.value, ret$parameter, ret$statistic)
+  rbind(ret)
+}
+#GetRegressionCoefValues(cs, "updrs", "pv")
+
+
 @
 
 \newpage
 
 \subsection{PtP movement variables}
+
+<<regresions>>=
+summary(lm("updrs ~ pv + Group", data=cs))
+@
 
 <<plots-of-change-scores-ptp, echo=TRUE, cache=TRUE, fig.height=6, fig.width=8>>=
 qplot(value, updrs, data=cs.melt.list$ptp1, geom="point", color=Group) + 
