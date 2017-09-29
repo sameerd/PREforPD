@@ -4,6 +4,7 @@
 *.tex 
 *.out
 *.sty
+*.toc
 
 .DS_Store
 *.swp

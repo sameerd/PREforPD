@@ -14,6 +14,11 @@
  {hyperref}
 \hypersetup{
  pdfstartview={XYZ null null 1}}
+
+
+\usepackage{bookmark}
+\pdfbookmark{\contentsname}{Contents}
+
 \begin{document}
 
 <<setup-knitr, cache=FALSE, echo=FALSE>>=
