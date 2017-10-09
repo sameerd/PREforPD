@@ -107,7 +107,7 @@ GetTestByGroup <- function(d, var1, var2) {
   ret.0 <- GetCorTestValues(filter(d, Group=="FC") , var1, var2)
   ret.1 <- GetCorTestValues(filter(d, Group=="PRE") , var1, var2)
   ret <- rbind.data.frame(ret.0, ret.1)
-  ret$Group <- c(0,1)
+  ret$Group <- c("FC","PRE")
   ret$var1 <- var1
   ret$var2 <- var2
   row.names(ret) <- NULL
@@ -376,10 +376,147 @@ qplot(rigid_change, rigid_start, data=rigid_df, color=Group) + geom_smooth(metho
 \noindent
 It looks like the patients who started with high rigidity scores improved the most. 
 
+<<rigidity.regressions>>=
+results <- lm("rigid_change ~ rigid_start + Group +  rigid_start*Group", data=rigid_df)
+summary(results)
+anova(results)
+@
+
+\noindent
+The interaction term isn't significant here. The two slopes can't be distinguished in the two groups
+
 \section{Significance test for change in td50}
 
+This analysis is repeated here because it is significant.
+
 <<td50.analysis>>=
-summary(lm(brady ~ td50 + Group + td50:Group, data=cs.dem))
+results <- lm(brady ~ td50 + Group + td50:Group, data=cs.dem)
+summary(results)
+anova(results)
 @
+
+\section{Analysis of groups with significant changes in updrs}
+
+<<change.updrs.groups>>=
+cs.dem$updrs_imp <- factor(cs.dem$updrs < 0, levels=c(FALSE, TRUE), 
+                             labels=c("Updrs not improved", "Updrs improved"))
+cs.dem$updrs_imp_sig <- factor(cs.dem$updrs < -5, levels=c(FALSE, TRUE), 
+                             labels=c("Updrs not improved sig", "Updrs improved sig"))
+
+@
+
+\subsection{Looking for change in updrs in the FC group}
+
+<<change.updrs.FC>>=
+# looking at the FC group and splitting by whether updrs improved or not
+cs.dem.FC <- cs.dem %>% filter(Group=="FC") 
+test_summary <- cs.dem.FC %>% group_by(updrs_imp) %>% 
+  summarize(cnt = n(),
+            male_cnt = sum(male), 
+            most_aff_R_cnt = sum(MostAffectedR),
+            age_mean = mean(age),
+            age_sd = sd(age),
+            dis_dur_mean = mean(DiseaseDuration),
+            dis_dur_sd = sd(DiseaseDuration)
+            )
+dcast(melt(test_summary) , variable ~ updrs_imp) %>% 
+        mutate_each(funs(round(.,2)), -variable) 
+
+# test for difference between males
+fisher.test(table(cs.dem.FC$updrs_imp, cs.dem.FC$male, useNA='no'))$p.value
+
+# test for difference between MostAffectedR
+fisher.test(table(cs.dem.FC$updrs_imp, cs.dem.FC$MostAffectedR, useNA='no'))$p.value
+
+#difference in age p-value for FC Group
+t.test(age ~ updrs_imp, cs.dem %>% filter(Group=="FC"))$p.value
+
+#difference in DiseaseDuration p-value for FC Group
+t.test(DiseaseDuration ~ updrs_imp, cs.dem %>% filter(Group=="FC"))$p.value
+
+# looking at the FC group and splitting by whether updrs improved *significantly* or not
+# significant means a greater than 5 point drop
+test_summary <- cs.dem.FC %>% group_by(updrs_imp_sig) %>% 
+  summarize(cnt = n(),
+            male_cnt = sum(male), 
+            most_aff_R_cnt = sum(MostAffectedR),
+            age_mean = mean(age),
+            age_sd = sd(age),
+            dis_dur_mean = mean(DiseaseDuration),
+            dis_dur_sd = sd(DiseaseDuration)
+            )
+dcast(melt(test_summary) , variable ~ updrs_imp_sig) %>% 
+        mutate_each(funs(round(.,2)), -variable) 
+
+# test for difference between males
+fisher.test(table(cs.dem.FC$updrs_imp_sig, cs.dem.FC$male, useNA='no'))$p.value
+
+# test for difference between MostAffectedR
+fisher.test(table(cs.dem.FC$updrs_imp_sig, cs.dem.FC$MostAffectedR, useNA='no'))$p.value
+
+#difference in age p-value for FC Group
+t.test(age ~ updrs_imp_sig, cs.dem %>% filter(Group=="FC"))$p.value
+
+#difference in DiseaseDuration p-value for FC Group
+t.test(DiseaseDuration ~ updrs_imp_sig, cs.dem %>% filter(Group=="FC"))$p.value
+@
+
+\subsection{Looking for change in updrs in the PRE group}
+
+<<change.updrs.PRE>>=
+# looking at the PRE group and splitting by whether updrs improved or not
+cs.dem.PRE <- cs.dem %>% filter(Group=="PRE") 
+test_summary <- cs.dem.PRE %>% group_by(updrs_imp) %>% 
+  summarize(cnt = n(),
+            male_cnt = sum(male), 
+            most_aff_R_cnt = sum(MostAffectedR),
+            age_mean = mean(age),
+            age_sd = sd(age),
+            dis_dur_mean = mean(DiseaseDuration),
+            dis_dur_sd = sd(DiseaseDuration)
+            )
+dcast(melt(test_summary) , variable ~ updrs_imp) %>% 
+        mutate_each(funs(round(.,2)), -variable) 
+
+# test for difference between males
+fisher.test(table(cs.dem.PRE$updrs_imp, cs.dem.PRE$male, useNA='no'))$p.value
+
+# test for difference between MostAffectedR
+fisher.test(table(cs.dem.PRE$updrs_imp, cs.dem.PRE$MostAffectedR, useNA='no'))$p.value
+
+#difference in age p-value for PRE Group
+t.test(age ~ updrs_imp, cs.dem %>% filter(Group=="PRE"))$p.value
+
+#difference in DiseaseDuration p-value for PRE Group
+t.test(DiseaseDuration ~ updrs_imp, cs.dem %>% filter(Group=="PRE"))$p.value
+
+# looking at the PRE group and splitting by whether updrs improved *significantly* or not
+# significant means a greater than 5 point drop
+test_summary <- cs.dem.PRE %>% group_by(updrs_imp_sig) %>% 
+  summarize(cnt = n(),
+            male_cnt = sum(male), 
+            most_aff_R_cnt = sum(MostAffectedR),
+            age_mean = mean(age),
+            age_sd = sd(age),
+            dis_dur_mean = mean(DiseaseDuration),
+            dis_dur_sd = sd(DiseaseDuration)
+            )
+dcast(melt(test_summary) , variable ~ updrs_imp_sig) %>% 
+        mutate_each(funs(round(.,2)), -variable) 
+
+# test for difference between males
+fisher.test(table(cs.dem.PRE$updrs_imp_sig, cs.dem.PRE$male, useNA='no'))$p.value
+
+# test for difference between MostAffectedR
+fisher.test(table(cs.dem.PRE$updrs_imp_sig, cs.dem.PRE$MostAffectedR, useNA='no'))$p.value
+
+#difference in age p-value for PRE Group
+t.test(age ~ updrs_imp_sig, cs.dem %>% filter(Group=="PRE"))$p.value
+
+#difference in DiseaseDuration p-value for PRE Group
+t.test(DiseaseDuration ~ updrs_imp_sig, cs.dem %>% filter(Group=="PRE"))$p.value
+@
+
+
 
 \end{document}
